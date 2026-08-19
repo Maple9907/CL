@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Web đánh cờ Othello/Reversi dùng engine Egaroucid WASM gốc.">
+    <title>Egaroucid Othello Web</title>
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="game-stage" aria-label="Bàn cờ Othello">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Egaroucid WASM engine</p>
+            <h1>Othello Web</h1>
+          </div>
+          <div class="engine-state" id="engineState">
+            <span class="state-dot" aria-hidden="true"></span>
+            <span id="engineText">Đang nạp engine...</span>
+          </div>
+        </header>
+
+        <div class="score-strip" aria-label="Điểm số">
+          <div class="score-item black-score">
+            <span class="mini-disc black-disc" aria-hidden="true"></span>
+            <span>Đen</span>
+            <strong id="blackScore">2</strong>
+          </div>
+          <div class="turn-box" id="turnBox">Chưa bắt đầu</div>
+          <div class="score-item white-score">
+            <span class="mini-disc white-disc" aria-hidden="true"></span>
+            <span>Trắng</span>
+            <strong id="whiteScore">2</strong>
+          </div>
+        </div>
+
+        <div class="board-wrap">
+          <div class="board-labels top-labels" aria-hidden="true">
+            <span>a</span><span>b</span><span>c</span><span>d</span><span>e</span><span>f</span><span>g</span><span>h</span>
+          </div>
+          <div class="board-row">
+            <div class="board-labels side-labels" aria-hidden="true">
+              <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span>
+            </div>
+            <div id="board" class="board" role="grid" aria-label="Bàn cờ 8 nhân 8"></div>
+          </div>
+        </div>
+
+        <div class="action-row">
+          <button type="button" id="newGameBtn">Ván mới</button>
+          <button type="button" id="undoBtn" disabled>Lùi 1 nước</button>
+          <button type="button" id="analyzeBtn" disabled>Phân tích</button>
+          <button type="button" id="resumeAiBtn" class="secondary" hidden>Cho AI đi</button>
+          <button type="button" id="copyBtn" class="secondary" disabled>Copy biên bản</button>
+        </div>
+      </section>
+
+      <aside class="side-panel" aria-label="Điều khiển và thông tin">
+        <section class="panel-section">
+          <h2>Thiết lập</h2>
+          <div class="choice-grid" role="radiogroup" aria-label="Chọn bên của bạn">
+            <label class="choice-card">
+              <input type="radio" name="humanSide" value="0" checked>
+              <span class="mini-disc black-disc" aria-hidden="true"></span>
+              <span>Tôi cầm đen</span>
+              <small>Bạn đi trước</small>
+            </label>
+            <label class="choice-card">
+              <input type="radio" name="humanSide" value="1">
+              <span class="mini-disc white-disc" aria-hidden="true"></span>
+              <span>Tôi cầm trắng</span>
+              <small>AI đi trước</small>
+            </label>
+          </div>
+
+          <label class="range-line" for="levelRange">
+            <span>Độ khó AI</span>
+            <strong id="levelText">Level 7</strong>
+          </label>
+          <input type="range" id="levelRange" min="0" max="15" step="1" value="7">
+
+          <div class="toggle-list">
+            <label><input type="checkbox" id="showLegal" checked> Hiện nước hợp lệ</label>
+            <label><input type="checkbox" id="showHints" checked> Hiện điểm gợi ý</label>
+            <label><input type="checkbox" id="soundToggle" checked> Âm thanh nhẹ</label>
+            <label><input type="checkbox" id="autoSaveToggle" checked> Tự lưu ván đang chơi</label>
+          </div>
+        </section>
+
+        <section class="panel-section">
+          <h2>Thông tin ván</h2>
+          <dl class="stats">
+            <div><dt>Lượt</dt><dd id="plyCount">0</dd></div>
+            <div><dt>Nước hợp lệ</dt><dd id="legalCount">0</dd></div>
+            <div><dt>Nước cuối</dt><dd id="lastMove">-</dd></div>
+            <div><dt>Điểm AI</dt><dd id="engineValue">-</dd></div>
+          </dl>
+          <p class="status-line" id="statusLine">Bấm "Ván mới" để bắt đầu.</p>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-head">
+            <h2>Lịch sử nước</h2>
+            <button type="button" id="clearSavedBtn" class="text-button">Xóa lưu</button>
+          </div>
+          <ol class="move-list" id="moveList"></ol>
+        </section>
+
+        <section class="panel-section source-note">
+          <h2>Nguồn engine</h2>
+          <p>Runtime dùng trực tiếp <code>ai.js</code> và <code>ai.wasm</code> từ Egaroucid for Web của Takuto Yamana, giấy phép GPL-3.0-or-later.</p>
+        </section>
+      </aside>
+    </main>
+
+    <template id="cellTemplate">
+      <button type="button" class="cell" role="gridcell">
+        <span class="hint-value"></span>
+        <span class="disc"></span>
+      </button>
+    </template>
+
+    <script src="app.js" defer></script>
+  </body>
+</html>
