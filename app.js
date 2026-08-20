@@ -26,6 +26,7 @@
     currentPlayer: BLACK,
     humanPlayer: BLACK,
     aiPlayer: WHITE,
+    firstMover: "human",
     level: 7,
     gameStarted: false,
     gameOver: false,
@@ -74,6 +75,8 @@
     elements.moveList = document.getElementById("moveList");
     elements.clearSavedBtn = document.getElementById("clearSavedBtn");
     elements.humanSideInputs = Array.prototype.slice.call(document.querySelectorAll("input[name='humanSide']"));
+    elements.firstMoverInputs = Array.prototype.slice.call(document.querySelectorAll("input[name='firstMover']"));
+    elements.setupPreview = document.getElementById("setupPreview");
   }
 
   function attachEvents() {
@@ -83,6 +86,13 @@
     elements.resumeAiBtn.addEventListener("click", resumeAiAfterUndo);
     elements.copyBtn.addEventListener("click", copyTranscript);
     elements.clearSavedBtn.addEventListener("click", clearSavedGame);
+
+    elements.humanSideInputs.forEach(function(input) {
+      input.addEventListener("change", updateSetupPreview);
+    });
+    elements.firstMoverInputs.forEach(function(input) {
+      input.addEventListener("change", updateSetupPreview);
+    });
 
     elements.levelRange.addEventListener("input", function(event) {
       state.level = Number(event.target.value);
@@ -203,13 +213,19 @@
   }
 
   function newGame() {
-    var selected = document.querySelector("input[name='humanSide']:checked");
-    var humanPlayer = selected ? Number(selected.value) : BLACK;
+    var sideInput = document.querySelector("input[name='humanSide']:checked");
+    var humanPlayer = sideInput ? Number(sideInput.value) : BLACK;
+    var firstInput = document.querySelector("input[name='firstMover']:checked");
+    var firstMover = firstInput ? firstInput.value : "human";
+    var aiPlayer = 1 - humanPlayer;
+    var startingPlayer = firstMover === "ai" ? aiPlayer : humanPlayer;
+
     state = {
       board: createInitialBoard(),
-      currentPlayer: BLACK,
+      currentPlayer: startingPlayer,
       humanPlayer: humanPlayer,
-      aiPlayer: 1 - humanPlayer,
+      aiPlayer: aiPlayer,
+      firstMover: firstMover,
       level: Number(elements.levelRange.value),
       gameStarted: true,
       gameOver: false,
@@ -218,7 +234,7 @@
       history: [],
       values: null,
       engineValue: null,
-      status: humanPlayer === BLACK ? "Bạn cầm đen và đi trước." : "Bạn cầm trắng. AI sẽ đi nước đầu."
+      status: buildStartStatus(humanPlayer, firstMover)
     };
     autoAiPaused = false;
     playTone(420, 0.05);
@@ -228,6 +244,15 @@
     if (elements.showHints.checked && state.currentPlayer === state.humanPlayer) {
       requestAnalysis();
     }
+  }
+
+  function buildStartStatus(humanPlayer, firstMover) {
+    var mine = sideName(humanPlayer).toLowerCase();
+    var aiColor = sideName(1 - humanPlayer);
+    if (firstMover === "human") {
+      return "Bạn cầm " + mine + " và đi trước.";
+    }
+    return "Bạn cầm " + mine + ". AI (" + aiColor + ") đi nước đầu.";
   }
 
   function createInitialBoard() {
@@ -426,6 +451,7 @@
     state.currentPlayer = snapshot.currentPlayer;
     state.humanPlayer = snapshot.humanPlayer;
     state.aiPlayer = snapshot.aiPlayer;
+    state.firstMover = snapshot.firstMover;
     state.level = snapshot.level;
     state.gameStarted = snapshot.gameStarted;
     state.gameOver = snapshot.gameOver;
@@ -447,6 +473,7 @@
       currentPlayer: state.currentPlayer,
       humanPlayer: state.humanPlayer,
       aiPlayer: state.aiPlayer,
+      firstMover: state.firstMover,
       level: state.level,
       gameStarted: state.gameStarted,
       gameOver: state.gameOver,
@@ -572,12 +599,36 @@
     elements.copyBtn.disabled = !state.moveLog.length;
     elements.resumeAiBtn.hidden = !(autoAiPaused && state.gameStarted && !state.gameOver && state.currentPlayer === state.aiPlayer);
 
+    var setupLocked = state.gameStarted && !state.gameOver && state.moveLog.length > 0;
     elements.humanSideInputs.forEach(function(input) {
-      input.disabled = state.gameStarted && !state.gameOver && state.moveLog.length > 0;
+      input.disabled = setupLocked;
       input.checked = Number(input.value) === state.humanPlayer;
     });
+    elements.firstMoverInputs.forEach(function(input) {
+      input.disabled = setupLocked;
+      input.checked = input.value === state.firstMover;
+    });
+    updateSetupPreview();
 
     renderMoveList();
+  }
+
+  function updateSetupPreview() {
+    if (!elements.setupPreview) {
+      return;
+    }
+    var sideInput = document.querySelector("input[name='humanSide']:checked");
+    var humanPlayer = sideInput ? Number(sideInput.value) : state.humanPlayer;
+    var firstInput = document.querySelector("input[name='firstMover']:checked");
+    var firstMover = firstInput ? firstInput.value : "human";
+    var aiPlayer = 1 - humanPlayer;
+    var startingPlayer = firstMover === "ai" ? aiPlayer : humanPlayer;
+    var secondPlayer = 1 - startingPlayer;
+    var startWho = startingPlayer === humanPlayer ? "Bạn" : "AI";
+    var secondWho = secondPlayer === humanPlayer ? "Bạn" : "AI";
+    elements.setupPreview.textContent =
+      sideName(startingPlayer) + " (" + startWho + ") đi trước → " +
+      sideName(secondPlayer) + " (" + secondWho + ") đi sau.";
   }
 
   function renderMoveList() {
@@ -721,6 +772,13 @@
         return;
       }
       state = Object.assign(state, payload.state);
+      if (state.firstMover !== "human" && state.firstMover !== "ai") {
+        if (state.moveLog && state.moveLog.length && state.moveLog[0] && state.moveLog[0].actor) {
+          state.firstMover = state.moveLog[0].actor === "ai" ? "ai" : "human";
+        } else {
+          state.firstMover = state.currentPlayer === state.humanPlayer ? "human" : "ai";
+        }
+      }
       state.values = null;
       state.status = state.gameStarted && !state.gameOver ? "Đã khôi phục ván đã lưu." : state.status;
       if (payload.controls) {
@@ -740,6 +798,9 @@
     elements.levelText.textContent = "Level " + state.level;
     elements.humanSideInputs.forEach(function(input) {
       input.checked = Number(input.value) === state.humanPlayer;
+    });
+    elements.firstMoverInputs.forEach(function(input) {
+      input.checked = input.value === state.firstMover;
     });
   }
 

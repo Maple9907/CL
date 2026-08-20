@@ -59,20 +59,40 @@
       <aside class="side-panel" aria-label="Điều khiển và thông tin">
         <section class="panel-section">
           <h2>Thiết lập</h2>
-          <div class="choice-grid" role="radiogroup" aria-label="Chọn bên của bạn">
+
+          <p class="field-label">Quân của bạn</p>
+          <div class="choice-grid" role="radiogroup" aria-label="Chọn quân của bạn">
             <label class="choice-card">
               <input type="radio" name="humanSide" value="0" checked>
               <span class="mini-disc black-disc" aria-hidden="true"></span>
-              <span>Tôi cầm đen</span>
-              <small>Bạn đi trước</small>
+              <span>Tôi cầm Đen</span>
+              <small>Luật gốc: đi trước</small>
             </label>
             <label class="choice-card">
               <input type="radio" name="humanSide" value="1">
               <span class="mini-disc white-disc" aria-hidden="true"></span>
-              <span>Tôi cầm trắng</span>
-              <small>AI đi trước</small>
+              <span>Tôi cầm Trắng</span>
+              <small>Luật gốc: đi sau</small>
             </label>
           </div>
+
+          <p class="field-label">Ai đi trước</p>
+          <div class="choice-grid" role="radiogroup" aria-label="Chọn ai đi nước đầu tiên">
+            <label class="choice-card">
+              <input type="radio" name="firstMover" value="human" checked>
+              <span class="mini-badge badge-you" aria-hidden="true">Bạn</span>
+              <span>Bạn đi trước</span>
+              <small>Bạn bấm ô đầu tiên</small>
+            </label>
+            <label class="choice-card">
+              <input type="radio" name="firstMover" value="ai">
+              <span class="mini-badge badge-ai" aria-hidden="true">AI</span>
+              <span>AI đi trước</span>
+              <small>AI tính nước đầu tiên</small>
+            </label>
+          </div>
+
+          <p class="setup-preview" id="setupPreview" aria-live="polite"></p>
 
           <label class="range-line" for="levelRange">
             <span>Độ khó AI</span>

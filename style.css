@@ -12,6 +12,7 @@
   --accent-dark: #983a25;
   --black: #111311;
   --white: #f7f4ec;
+  --ai: #3d5a73;
   --shadow: 0 16px 40px rgba(42, 35, 21, 0.16);
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
@@ -410,6 +411,53 @@ h2 {
   border-radius: 50%;
   display: inline-block;
   flex: 0 0 auto;
+}
+
+.field-label {
+  margin: 14px 0 8px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.field-label:first-of-type {
+  margin-top: 0;
+}
+
+.mini-badge {
+  min-width: 24px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+
+.badge-you {
+  background: var(--accent);
+}
+
+.badge-ai {
+  background: var(--ai);
+}
+
+.setup-preview {
+  margin: 10px 0 0;
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: var(--ink);
+  background: #f6edda;
+  font-size: 0.86rem;
+  font-weight: 750;
+  text-align: center;
 }
 
 .range-line {
