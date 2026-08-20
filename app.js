@@ -222,6 +222,11 @@
     var aiPlayer = 1 - humanPlayer;
     var startingPlayer = firstMover === "ai" ? aiPlayer : humanPlayer;
 
+    if (pendingKind) {
+      requestId += 1;
+      restartWorkerAfterCancel();
+    }
+
     state = {
       board: createInitialBoard(),
       currentPlayer: startingPlayer,
@@ -476,7 +481,6 @@
     state.engineValue = snapshot.engineValue;
     state.status = "Đã lùi đúng 1 nước.";
     autoAiPaused = state.gameStarted && !state.gameOver && state.currentPlayer === state.aiPlayer;
-    syncControlsFromState();
     playTone(260, 0.04);
     render();
     saveIfNeeded();
@@ -622,15 +626,6 @@
     elements.copyBtn.disabled = !state.moveLog.length;
     elements.resumeAiBtn.hidden = !(autoAiPaused && state.gameStarted && !state.gameOver && state.currentPlayer === state.aiPlayer);
 
-    var setupLocked = state.gameStarted && !state.gameOver && state.moveLog.length > 0;
-    elements.humanSideInputs.forEach(function(input) {
-      input.disabled = setupLocked;
-      input.checked = Number(input.value) === state.humanPlayer;
-    });
-    elements.firstMoverInputs.forEach(function(input) {
-      input.disabled = setupLocked;
-      input.checked = input.value === state.firstMover;
-    });
     updateSetupPreview();
 
     renderMoveList();
@@ -649,8 +644,9 @@
     var secondPlayer = 1 - startingPlayer;
     var startWho = startingPlayer === humanPlayer ? "Bạn" : "AI";
     var secondWho = secondPlayer === humanPlayer ? "Bạn" : "AI";
+    var prefix = state.gameStarted && !state.gameOver ? "Ván tiếp theo: " : "";
     elements.setupPreview.textContent =
-      sideName(startingPlayer) + " (" + startWho + ") đi trước → " +
+      prefix + sideName(startingPlayer) + " (" + startWho + ") đi trước → " +
       sideName(secondPlayer) + " (" + secondWho + ") đi sau.";
   }
 
@@ -839,14 +835,18 @@
   }
 
   function syncControlsFromState() {
-    elements.levelRange.value = String(state.level);
-    elements.levelText.textContent = "Level " + state.level;
+    syncLevelControl();
     elements.humanSideInputs.forEach(function(input) {
       input.checked = Number(input.value) === state.humanPlayer;
     });
     elements.firstMoverInputs.forEach(function(input) {
       input.checked = input.value === state.firstMover;
     });
+  }
+
+  function syncLevelControl() {
+    elements.levelRange.value = String(state.level);
+    elements.levelText.textContent = "Level " + state.level;
   }
 
   function clearSavedGame() {
