@@ -31,6 +31,7 @@
     gameStarted: false,
     gameOver: false,
     lastMove: null,
+    lastMoves: [],
     moveLog: [],
     history: [],
     values: null,
@@ -77,6 +78,7 @@
     elements.humanSideInputs = Array.prototype.slice.call(document.querySelectorAll("input[name='humanSide']"));
     elements.firstMoverInputs = Array.prototype.slice.call(document.querySelectorAll("input[name='firstMover']"));
     elements.setupPreview = document.getElementById("setupPreview");
+    elements.streakNote = document.getElementById("streakNote");
   }
 
   function attachEvents() {
@@ -230,6 +232,7 @@
       gameStarted: true,
       gameOver: false,
       lastMove: null,
+      lastMoves: [],
       moveLog: [],
       history: [],
       values: null,
@@ -326,6 +329,11 @@
       state.board[flips[i]] = player;
     }
     state.lastMove = { index: index, player: player, actor: actor };
+    if (state.lastMoves.length && state.lastMoves[0].player === player) {
+      state.lastMoves = [state.lastMove].concat(state.lastMoves);
+    } else {
+      state.lastMoves = [state.lastMove];
+    }
     state.moveLog.push({
       type: "move",
       index: index,
@@ -456,6 +464,13 @@
     state.gameStarted = snapshot.gameStarted;
     state.gameOver = snapshot.gameOver;
     state.lastMove = snapshot.lastMove;
+    state.lastMoves = snapshot.lastMoves;
+    if (!Array.isArray(state.lastMoves)) {
+      state.lastMoves = state.lastMove ? [state.lastMove] : [];
+    }
+    if (state.firstMover !== "human" && state.firstMover !== "ai") {
+      state.firstMover = "human";
+    }
     state.moveLog = snapshot.moveLog;
     state.values = null;
     state.engineValue = snapshot.engineValue;
@@ -478,6 +493,7 @@
       gameStarted: state.gameStarted,
       gameOver: state.gameOver,
       lastMove: state.lastMove ? Object.assign({}, state.lastMove) : null,
+      lastMoves: state.lastMoves.map(function(move) { return Object.assign({}, move); }),
       moveLog: state.moveLog.map(function(move) { return Object.assign({}, move); }),
       engineValue: state.engineValue,
       status: state.status
@@ -535,6 +551,10 @@
     for (var i = 0; i < legalMoves.length; i += 1) {
       legalSet[legalMoves[i].index] = true;
     }
+    var streakSet = {};
+    for (var s = 1; s < state.lastMoves.length; s += 1) {
+      streakSet[state.lastMoves[s].index] = true;
+    }
 
     elements.blackScore.textContent = String(counts.black);
     elements.whiteScore.textContent = String(counts.white);
@@ -546,6 +566,7 @@
     elements.engineValue.textContent = state.engineValue === null || state.engineValue === undefined ? "-" : signed(state.engineValue);
     elements.statusLine.textContent = state.status;
     elements.turnBox.textContent = turnText(counts);
+    updateStreakNote();
 
     var cells = Array.prototype.slice.call(elements.board.children);
     for (var index = 0; index < cells.length; index += 1) {
@@ -567,6 +588,8 @@
 
       if (state.lastMove && state.lastMove.index === index) {
         cell.classList.add("last");
+      } else if (streakSet[index]) {
+        cell.classList.add("streak");
       }
 
       if (
@@ -629,6 +652,25 @@
     elements.setupPreview.textContent =
       sideName(startingPlayer) + " (" + startWho + ") đi trước → " +
       sideName(secondPlayer) + " (" + secondWho + ") đi sau.";
+  }
+
+  function updateStreakNote() {
+    if (!elements.streakNote) {
+      return;
+    }
+    if (state.lastMoves.length < 2) {
+      elements.streakNote.hidden = true;
+      elements.streakNote.textContent = "";
+      return;
+    }
+    var streak = state.lastMoves;
+    var mover = streak[0].player;
+    var moverLabel = streak[0].actor === "ai" ? "AI" : "Bạn";
+    var skippedLabel = sideName(1 - mover);
+    elements.streakNote.hidden = false;
+    elements.streakNote.textContent =
+      "🔁 " + moverLabel + " (" + sideName(mover) + ") vừa đi liên tiếp " + streak.length +
+      " nước vì " + skippedLabel + " không có nước hợp lệ.";
   }
 
   function renderMoveList() {
@@ -772,6 +814,9 @@
         return;
       }
       state = Object.assign(state, payload.state);
+      if (!Array.isArray(state.lastMoves)) {
+        state.lastMoves = state.lastMove ? [state.lastMove] : [];
+      }
       if (state.firstMover !== "human" && state.firstMover !== "ai") {
         if (state.moveLog && state.moveLog.length && state.moveLog[0] && state.moveLog[0].actor) {
           state.firstMover = state.moveLog[0].actor === "ai" ? "ai" : "human";
