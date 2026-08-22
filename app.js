@@ -20,6 +20,8 @@
   var pendingKind = "";
   var autoAiPaused = false;
   var audioContext = null;
+  var aiThinkTimer = null;
+  var aiThinkStartedAt = 0;
 
   var state = {
     board: createInitialBoard(),
@@ -78,7 +80,6 @@
     elements.humanSideInputs = Array.prototype.slice.call(document.querySelectorAll("input[name='humanSide']"));
     elements.firstMoverInputs = Array.prototype.slice.call(document.querySelectorAll("input[name='firstMover']"));
     elements.setupPreview = document.getElementById("setupPreview");
-    elements.streakNote = document.getElementById("streakNote");
   }
 
   function attachEvents() {
@@ -152,6 +153,7 @@
       engineReady = false;
       engineError = event.message || "Không nạp được engine.";
       pendingKind = "";
+      stopAiThinkTimer();
       updateEngineState("Lỗi engine", true);
       state.status = engineError;
       render();
@@ -160,7 +162,22 @@
 
   function restartWorkerAfterCancel() {
     pendingKind = "";
+    stopAiThinkTimer();
     startWorker();
+  }
+
+  function startAiThinkTimer() {
+    stopAiThinkTimer();
+    aiThinkStartedAt = Date.now();
+    aiThinkTimer = setInterval(render, 1000);
+  }
+
+  function stopAiThinkTimer() {
+    if (aiThinkTimer) {
+      clearInterval(aiThinkTimer);
+      aiThinkTimer = null;
+    }
+    aiThinkStartedAt = 0;
   }
 
   function handleWorkerMessage(event) {
@@ -169,6 +186,7 @@
     if (message.type === "ready") {
       engineReady = true;
       pendingKind = "";
+      stopAiThinkTimer();
       updateEngineState("Engine sẵn sàng");
       render();
       maybeQueueAi();
@@ -183,6 +201,7 @@
         return;
       }
       pendingKind = "";
+      stopAiThinkTimer();
       handleAiMove(message.result, message.elapsedMs);
       return;
     }
@@ -192,8 +211,12 @@
         return;
       }
       pendingKind = "";
-      state.values = message.values;
-      state.status = "Đã phân tích xong trong " + formatTime(message.elapsedMs) + ".";
+      if (elements.showHints.checked) {
+        state.values = message.values;
+        state.status = "Đã phân tích xong trong " + formatTime(message.elapsedMs) + ".";
+      } else {
+        state.values = null;
+      }
       render();
       saveIfNeeded();
       return;
@@ -201,6 +224,7 @@
 
     if (message.type === "error") {
       pendingKind = "";
+      stopAiThinkTimer();
       engineError = message.message || "Engine bị lỗi.";
       updateEngineState("Lỗi engine", true);
       state.status = engineError;
@@ -410,6 +434,7 @@
     }
     requestId += 1;
     pendingKind = "bestMove";
+    startAiThinkTimer();
     state.status = "AI đang tính level " + state.level + "...";
     render();
     worker.postMessage({
@@ -570,7 +595,6 @@
     elements.engineValue.textContent = state.engineValue === null || state.engineValue === undefined ? "-" : signed(state.engineValue);
     elements.statusLine.textContent = state.status;
     elements.turnBox.textContent = turnText(counts);
-    updateStreakNote();
 
     var cells = Array.prototype.slice.call(elements.board.children);
     for (var index = 0; index < cells.length; index += 1) {
@@ -650,25 +674,6 @@
       sideName(secondPlayer) + " (" + secondWho + ") đi sau.";
   }
 
-  function updateStreakNote() {
-    if (!elements.streakNote) {
-      return;
-    }
-    if (state.lastMoves.length < 2) {
-      elements.streakNote.hidden = true;
-      elements.streakNote.textContent = "";
-      return;
-    }
-    var streak = state.lastMoves;
-    var mover = streak[0].player;
-    var moverLabel = streak[0].actor === "ai" ? "AI" : "Bạn";
-    var skippedLabel = sideName(1 - mover);
-    elements.streakNote.hidden = false;
-    elements.streakNote.textContent =
-      "🔁 " + moverLabel + " (" + sideName(mover) + ") vừa đi liên tiếp " + streak.length +
-      " nước vì " + skippedLabel + " không có nước hợp lệ.";
-  }
-
   function renderMoveList() {
     elements.moveList.innerHTML = "";
     for (var i = 0; i < state.moveLog.length; i += 1) {
@@ -712,13 +717,15 @@
       }
       return (counts.black > counts.white ? "Đen" : "Trắng") + " thắng";
     }
+    var streakSuffix = state.lastMoves.length >= 2 ? " · 🔁×" + state.lastMoves.length : "";
     if (pendingKind === "bestMove") {
-      return "AI đang tính";
+      var elapsedSec = aiThinkStartedAt ? Math.floor((Date.now() - aiThinkStartedAt) / 1000) : 0;
+      return "AI đang tính" + (elapsedSec > 0 ? " (" + elapsedSec + "s)" : "") + streakSuffix;
     }
     if (pendingKind === "values") {
       return "Đang phân tích";
     }
-    return "Lượt " + sideName(state.currentPlayer);
+    return "Lượt " + sideName(state.currentPlayer) + streakSuffix;
   }
 
   function resultText() {

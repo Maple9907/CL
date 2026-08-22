@@ -35,8 +35,6 @@
           </div>
         </div>
 
-        <p class="streak-note" id="streakNote" hidden aria-live="polite"></p>
-
         <div class="board-wrap">
           <div class="board-labels top-labels" aria-hidden="true">
             <span>a</span><span>b</span><span>c</span><span>d</span><span>e</span><span>f</span><span>g</span><span>h</span>
@@ -101,10 +99,11 @@
             <strong id="levelText">Level 7</strong>
           </label>
           <input type="range" id="levelRange" min="0" max="15" step="1" value="7">
+          <small class="level-hint">Level ~13-15 giải chính xác cuối ván — rất mạnh nhưng có thể mất nhiều giây, nhất là trên điện thoại. Hạ level nếu muốn AI phản hồi nhanh hơn.</small>
 
           <div class="toggle-list">
             <label><input type="checkbox" id="showLegal" checked> Hiện nước hợp lệ</label>
-            <label><input type="checkbox" id="showHints" checked> Hiện điểm gợi ý</label>
+            <label><input type="checkbox" id="showHints"> Hiện điểm gợi ý (chậm hơn mỗi lượt)</label>
             <label><input type="checkbox" id="soundToggle" checked> Âm thanh nhẹ</label>
             <label><input type="checkbox" id="autoSaveToggle" checked> Tự lưu ván đang chơi</label>
           </div>
